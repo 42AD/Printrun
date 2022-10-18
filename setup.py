@@ -75,10 +75,22 @@ setup(
     license="GPLv3+",
     data_files=data_files,
     packages=find_packages(),
-    scripts=["pronsole.py", "pronterface.py", "plater.py", "printcore.py"],
+    scripts=[
+        "pronsole.py",
+        "pronterface.py",
+        "plater.py",
+        "printcore.py"
+    ],
     ext_modules=extensions,
     python_requires=">=3.6",
     install_requires=install_requires,
+    extras_require={
+        "pronterface": [
+            "wxPython==4.1.0",
+            "cairocffi",
+            "cairosvg>=1.0.9"
+        ]
+    },
     setup_requires=["Cython"],
     classifiers=[
         "Environment :: X11 Applications :: GTK",
