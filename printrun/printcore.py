@@ -95,6 +95,7 @@ class printcore():
         self.lineno = 0
         self.resendfrom = -1
         self.paused = False
+        self.canceled = False
         self.sentlines = {}
         self.log = deque(maxlen = 10000)
         self.sent = []
@@ -133,6 +134,7 @@ class printcore():
             self.connect(port, baud)
         self.xy_feedrate = None
         self.z_feedrate = None
+        self.sender_lock = threading.Lock()
 
     def addEventHandler(self, handler):
         '''
@@ -457,16 +459,18 @@ class printcore():
         logging.debug('Exiting read thread')
 
     def _start_sender(self):
-        self.stop_send_thread = False
-        self.send_thread = threading.Thread(target = self._sender,
-                                            name = 'send thread')
-        self.send_thread.start()
+        with self.sender_lock:
+            self.stop_send_thread = False
+            self.send_thread = threading.Thread(target = self._sender,
+                                                name = 'send thread')
+            self.send_thread.start()
 
     def _stop_sender(self):
-        if self.send_thread:
-            self.stop_send_thread = True
-            self.send_thread.join()
-            self.send_thread = None
+        with self.sender_lock:
+            if self.send_thread:
+                self.stop_send_thread = True
+                self.send_thread.join()
+                self.send_thread = None
 
     def _sender(self):
         while not self.stop_send_thread:
@@ -492,6 +496,7 @@ class printcore():
         """
         if self.printing or not self.online or not self.printer:
             return False
+        self.canceled = False
         self.queueindex = startindex
         self.mainqueue = gcode
         self.printing = True
@@ -511,6 +516,7 @@ class printcore():
         return True
 
     def cancelprint(self):
+        self.canceled = True
         self.pause()
         self.paused = False
         self.mainqueue = None
